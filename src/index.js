@@ -5,28 +5,30 @@ const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const helmet = require("helmet");
 const mongoSanitize = require("express-mongo-sanitize");
+const compression = require("compression");
 const fileUpload = require("express-fileupload");
 const cors = require("cors");
 const createHttpError = require("http-errors");
-const routes = require("./routes/index.js");
+const logger = require('./configs/logger.config.js');
+//const routes = require("./routes/index.js");
 
 const mongoose = require('mongoose');
 
 // IMPORT CONTROLLERS
-const userController = require('./controllers/userController');
-const cookieController = require('./controllers/cookieController');
-const sessionController = require('./controllers/sessionController');
+// const userController = require('./controllers/userController');
+// const cookieController = require('./controllers/cookieController');
+// const sessionController = require('./controllers/sessionController');
 
 // CONNECT TO PORT
 const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}...`);
+    logger.error(`Listening on port ${PORT}...`);
 });
 
 
 // CONNECT TO DATABASE
-const mongoURI = process.env.NODE_ENV === 'test' ? 'mongodb://localhost/unit11test' : 'mongodb://localhost/unit11dev';
-mongoose.connect(mongoURI);
+// const mongoURI = process.env.NODE_ENV === 'test' ? 'mongodb://localhost/unit11test' : 'mongodb://localhost/unit11dev';
+// mongoose.connect(mongoURI);
 
 
 /**
@@ -61,4 +63,29 @@ app.use(
 //cors
 app.use(cors());
 
-app.use('/client', express.static(path.resolve(__dirname, '../client')));
+
+// app.use('/', (req, res) => {
+//     req.se
+// })
+
+//app.use('/client', express.static(path.resolve(__dirname, '../client')));
+
+
+/**
+ * 404 handler
+ */
+app.use('*', (req, res) => {
+    res.status(404).send('Not Found');
+});
+
+
+app.use((err, req, res, next) => {
+    const defaultErr = {
+        log: 'Express error handler caught unknown middleware error',
+        status: 500,
+        message: { err: 'An error occurred' },
+    };
+    const errorObj = Object.assign({}, defaultErr, err);
+    console.log(errorObj.log);
+    return res.status(errorObj.status).json(errorObj.message);
+});
