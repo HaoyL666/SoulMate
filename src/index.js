@@ -22,7 +22,7 @@ const mongoose = require('mongoose');
 // CONNECT TO PORT
 const PORT = 3000;
 app.listen(PORT, () => {
-    logger.error(`Listening on port ${PORT}...`);
+    console.log(`Listening on port ${PORT}...`);
 });
 
 
@@ -63,10 +63,14 @@ app.use(
 //cors
 app.use(cors());
 
+// /**
+//  * require routers
+//  */
+const authRouter = require('./routes/auth.js')
+// const charactersRouter = require('./routes/characters.js')
 
-// app.use('/', (req, res) => {
-//     req.se
-// })
+
+app.use('/', authRouter);
 
 //app.use('/client', express.static(path.resolve(__dirname, '../client')));
 
@@ -78,7 +82,7 @@ app.use('*', (req, res) => {
     res.status(404).send('Not Found');
 });
 
-
+// global error handler
 app.use((err, req, res, next) => {
     const defaultErr = {
         log: 'Express error handler caught unknown middleware error',
