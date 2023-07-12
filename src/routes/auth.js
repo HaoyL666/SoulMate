@@ -8,7 +8,9 @@ const router = express.Router();
 router.post('/register',
     trimRequest.all,
     userController.register,
-    (req, res) => res.send("hello")
+    (req, res) => {
+        return res.status(200).json(res.locals.newUser)
+    }
 );
 
 // router.get('/species',

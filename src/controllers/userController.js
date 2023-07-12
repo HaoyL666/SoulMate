@@ -5,6 +5,11 @@ const createHttpError = require("http-errors");
 const validator = require("validator");
 
 const userController = {};
+DEFAULT_PICTURE = "https://res.cloudinary.com/dkd5jblv5/image/upload/v1675976806/Default_ProfilePicture_gjngnb.png";
+DEFAULT_STATUS = "Hey! I am using Soul";
+ACCESS_TOKEN_SECRET = "oZMEqpgAuLrZJqKUK967";
+REFRESH_TOKEN_SECRET = "G4TtjUB1PJk08ucd14Xu";
+
 
 userController.register = async (req, res, next) => {
     try {
@@ -17,35 +22,40 @@ userController.register = async (req, res, next) => {
             status,
             password,
         })
+        console.log(newUser)
+
+        const access_token = await generateToken(
+            { userId: newUser._id },
+            "1d",
+            ACCESS_TOKEN_SECRET
+        );
+        const refresh_token = await generateToken(
+            { userId: newUser._id },
+            "30d",
+            REFRESH_TOKEN_SECRET
+        );
+
+        res.cookie("refreshtoken", refresh_token, {
+            httpOnly: true,
+            path: "/register/refreshtoken",
+            maxAge: 30 * 24 * 60 * 60 * 1000, //30 days
+        });
+
+        console.table({ access_token, refresh_token });
+
+        res.locals.newUser = {
+            message: "register success",
+            access_token,
+            user: {
+                _id: newUser._id,
+                name: newUser.name,
+                email: newUser.email,
+                picture: newUser.picture,
+                status: newUser.status,
+                token: access_token,
+            }
+        };
         next();
-        // const access_token = await generateToken(
-        //     { userId: newUser._id },
-        //     "1d",
-        //     process.env.ACCESS_TOKEN_SECRET
-        // );
-        // const refresh_token = await generateToken(
-        //     { userId: newUser._id },
-        //     "30d",
-        //     process.env.REFRESH_TOKEN_SECRET
-        // );
-
-        // res.cookie("refreshtoken", refresh_token, {
-        //     httpOnly: true,
-        //     path: "/api/v1/auth/refreshtoken",
-        //     maxAge: 30 * 24 * 60 * 60 * 1000, //30 days
-        // });
-
-        // res.json({
-        //     message: "register success.",
-        //     user: {
-        //         _id: newUser._id,
-        //         name: newUser.name,
-        //         email: newUser.email,
-        //         picture: newUser.picture,
-        //         status: newUser.status,
-        //         token: access_token,
-        //     },
-        // });
     } catch (err) {
         next(err);
     }
@@ -111,15 +121,63 @@ const createUser = async (userData) => {
         );
     }
 
+    //adding user to databse
     const user = await new userModel({
         name,
         email,
-        picture,
-        status,
+        picture: picture || DEFAULT_PICTURE,
+        status: status || DEFAULT_STATUS,
         password,
-    }).save()
+    }).save();
 
     return user;
 }
+
+
+const generateToken = async (payload, expiresIn, secret) => {
+    let token = await sign(payload, expiresIn, secret);
+    return token;
+};
+
+const verifyToken = async (token, secret) => {
+    let check = await verify(token, secret);
+    return check;
+};
+
+
+const jwt = require("jsonwebtoken");
+
+const sign = async (payload, expiresIn, secret) => {
+    return new Promise((resolve, reject) => {
+        jwt.sign(
+            payload,
+            secret,
+            {
+                expiresIn: expiresIn,
+            },
+            (error, token) => {
+                if (error) {
+                    console.log(error);
+                    reject(error);
+                } else {
+                    resolve(token);
+                }
+            }
+        );
+    });
+};
+
+const verify = async (token, secret) => {
+    return new Promise((resolve, reject) => {
+        jwt.verify(token, secret, (error, payload) => {
+            if (error) {
+                logger.error(error);
+                resolve(null);
+            } else {
+                resolve(payload);
+            }
+        });
+    });
+};
 
 module.exports = userController;

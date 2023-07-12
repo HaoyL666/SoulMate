@@ -19,7 +19,7 @@
     "express-mongo-sanitize": "^2.2.0",
     "helmet": "^6.2.0",
     "http-errors": "^2.0.0",
-    "jsonwebtoken": "^9.0.0",
+    "jsonwebtoken": "^9.0.1",
     "mongoose": "^7.0.0",
     "morgan": "^1.10.0",
     "nodemon": "^2.0.21",
