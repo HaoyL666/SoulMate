@@ -3,6 +3,7 @@ const userModel = require('../models/userModel');
 //const bcrypt = require('bcryptjs');
 const createHttpError = require("http-errors");
 const validator = require("validator");
+const bcrypt = require('bcrypt');
 
 const userController = {};
 DEFAULT_PICTURE = "https://res.cloudinary.com/dkd5jblv5/image/upload/v1675976806/Default_ProfilePicture_gjngnb.png";
@@ -14,7 +15,7 @@ REFRESH_TOKEN_SECRET = "G4TtjUB1PJk08ucd14Xu";
 userController.register = async (req, res, next) => {
     try {
         const { name, email, picture, status, password } = req.body;
-        console.log(req.body)
+        //console.log(req.body)
         const newUser = await createUser({
             name,
             email,
@@ -22,7 +23,7 @@ userController.register = async (req, res, next) => {
             status,
             password,
         })
-        console.log(newUser)
+        //console.log(newUser)
 
         const access_token = await generateToken(
             { userId: newUser._id },
@@ -35,13 +36,15 @@ userController.register = async (req, res, next) => {
             REFRESH_TOKEN_SECRET
         );
 
+        //console.log(refresh_token);
+
         res.cookie("refreshtoken", refresh_token, {
             httpOnly: true,
-            path: "/register/refreshtoken",
+            path: "/auth/refreshtoken",
             maxAge: 30 * 24 * 60 * 60 * 1000, //30 days
         });
 
-        console.table({ access_token, refresh_token });
+        //console.table({ access_token, refresh_token });
 
         res.locals.newUser = {
             message: "register success",
@@ -171,7 +174,7 @@ const verify = async (token, secret) => {
     return new Promise((resolve, reject) => {
         jwt.verify(token, secret, (error, payload) => {
             if (error) {
-                logger.error(error);
+                console.error(error);
                 resolve(null);
             } else {
                 resolve(payload);
@@ -179,5 +182,113 @@ const verify = async (token, secret) => {
         });
     });
 };
+
+userController.login = async (req, res, next) => {
+    try {
+        const { email, password } = req.body;
+        const user = await userModel.findOne({ email: email.toLowerCase() })
+        console.log("logging in, user is: ", user);
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            console.log(password);
+            console.log("Invalid credentials.")
+            throw createHttpError.NotFound("Invalid credentials.");
+        }
+        const access_token = await generateToken(
+            { userId: user._id },
+            "1d",
+            ACCESS_TOKEN_SECRET
+        );
+        const refresh_token = await generateToken(
+            { userId: user._id },
+            "30d",
+            REFRESH_TOKEN_SECRET
+        );
+
+        res.cookie("refreshtoken", refresh_token, {
+            httpOnly: true,
+            path: "/auth/refreshtoken",
+            maxAge: 30 * 24 * 60 * 60 * 1000, //30 days
+        });
+
+        //console.table({ access_token, refresh_token });
+
+        res.locals.user = {
+            message: "register success",
+            access_token,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                picture: user.picture,
+                status: user.status,
+                token: access_token,
+            }
+        };
+        next();
+    } catch (err) {
+        next(err)
+
+    }
+
+}
+
+userController.logout = async (req, res, next) => {
+    try {
+        res.clearCookie("refreshtoken", { path: "/auth/refreshtoken" });
+        next();
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+const findUser = async (userId) => {
+    const user = await userModel.findById(userId);
+    if (!user) throw createHttpError.BadRequest("Please fill all fields.");
+    return user;
+};
+
+//   const searchUsers = async (keyword, userId) => {
+//     const users = await UserModel.find({
+//       $or: [
+//         { name: { $regex: keyword, $options: "i" } },
+//         { email: { $regex: keyword, $options: "i" } },
+//       ],
+//     }).find({
+//       _id: { $ne: userId },
+//     });
+//     return users;
+//   };
+
+userController.refreshToken = async (req, res, next) => {
+    try {
+        const refresh_token = req.cookies.refreshtoken;
+        if (!refresh_token) throw createHttpError.Unauthorized("Please login.");
+        const check = await verifyToken(
+            refresh_token,
+            REFRESH_TOKEN_SECRET
+        );
+        const user = await findUser(check.userId);
+        const access_token = await generateToken(
+            { userId: user._id },
+            "1d",
+            ACCESS_TOKEN_SECRET
+        );
+        res.json({
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                picture: user.picture,
+                status: user.status,
+                token: access_token,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
 
 module.exports = userController;

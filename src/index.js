@@ -80,7 +80,7 @@ const authRouter = require('./routes/auth.js')
 // const charactersRouter = require('./routes/characters.js')
 
 
-app.use('/', authRouter);
+app.use('/auth', authRouter);
 
 //app.use('/client', express.static(path.resolve(__dirname, '../client')));
 

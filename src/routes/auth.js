@@ -13,6 +13,45 @@ router.post('/register',
     }
 );
 
+router.post("/login",
+    trimRequest.all,
+    userController.login,
+    (req, res) => {
+        return res.status(200).json(res.locals.user)
+    }
+);
+
+router.post("/logout",
+    trimRequest.all, userController.logout,
+    (req, res) => {
+        return res.status(200).json({
+            message: "logged out !",
+        });
+    });
+
+
+router.route("/refreshtoken").post(trimRequest.all, userController.refreshToken);
+
+const createHttpError = require("http-errors");
+const jwt = require("jsonwebtoken");
+ACCESS_TOKEN_SECRET = "oZMEqpgAuLrZJqKUK967";
+
+async function auth(req, res, next) {
+    if (!req.headers["authorization"])
+        return next(createHttpError.Unauthorized());
+    const bearerToken = req.headers["authorization"];
+    const token = bearerToken.split(" ")[1];
+    jwt.verify(token, ACCESS_TOKEN_SECRET, (err, payload) => {
+        if (err) {
+            return next(createHttpError.Unauthorized());
+        }
+        req.user = payload;
+        next();
+    });
+}
+
+
+
 // router.get('/species',
 //   starWarsController.getSpecies,
 //   (req, res) => res.status(200).json(res.locals.speciesInfo)
