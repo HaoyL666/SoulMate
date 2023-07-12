@@ -5,9 +5,9 @@ const userController = require('../controllers/userController');
 
 const router = express.Router();
 
-router.get('/register',
+router.post('/register',
     trimRequest.all,
-    userController.createUser,
+    userController.register,
     (req, res) => res.send("hello")
 );
 
