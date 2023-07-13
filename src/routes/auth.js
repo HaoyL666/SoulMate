@@ -32,6 +32,12 @@ router.post("/logout",
 
 router.route("/refreshtoken").post(trimRequest.all, userController.refreshToken);
 
+router.get('/hi', (req, res) => {
+    return res.status(200).json({
+        message: "hi",
+    })
+})
+
 const createHttpError = require("http-errors");
 const jwt = require("jsonwebtoken");
 ACCESS_TOKEN_SECRET = "oZMEqpgAuLrZJqKUK967";

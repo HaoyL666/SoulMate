@@ -20,7 +20,7 @@ const mongoose = require('mongoose');
 // const sessionController = require('./controllers/sessionController');
 
 // CONNECT TO PORT
-const PORT = 3000;
+const PORT = 8080;
 app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}...`);
 });
@@ -77,10 +77,11 @@ app.use(cors());
 //  * require routers
 //  */
 const authRouter = require('./routes/auth.js')
-// const charactersRouter = require('./routes/characters.js')
+// const conversationRouter = require('./routes/conversation.js')
 
 
 app.use('/auth', authRouter);
+// app.use('/conversation', conversationRouter);
 
 //app.use('/client', express.static(path.resolve(__dirname, '../client')));
 
